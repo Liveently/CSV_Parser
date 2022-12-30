@@ -7,9 +7,6 @@
 // строка к объявленному типу
 template<typename T>
 T toType(std::string str) {
-    if constexpr (std::is_same_v<T, std::string>) {
-        return str;
-    }
     T value;
     if (!(std::stringstream(str) >> value)) {
         throw simple_exception("Wrong field type.");

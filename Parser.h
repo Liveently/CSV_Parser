@@ -14,24 +14,14 @@ private:
     std::ifstream& csvFile;
     char colSep; // (,)
     char rowSep;  // (\n)
-    int linesTotal{};
 
-    void setLinesNumber(int n) {
-        linesTotal = 0;
+
+    void skip_lines(int n) {
         std::string tmp;
-        while (getline(csvFile, tmp)) {
-            linesTotal += 1;
-        }
-        tmp.clear();
-        csvFile.clear();
-        csvFile.seekg(0, std::ios::beg);
-
 
         for (int i=0 ; i < n; ++i) {
             std::getline(csvFile, tmp);
         }
-
-        linesTotal -= n;
 
     }
 
@@ -69,6 +59,7 @@ private:
     }
 
     std::tuple<Args...> getTuple(std::string line, int lineIdx) {
+
         if (line.empty()) {
             throw simple_exception(
                     "Line " + std::to_string(lineIdx+1) + ": "
@@ -104,29 +95,35 @@ private:
     private:
         Parser* parser;
         int idx;
-        int endIdx;
+
     public:
+
         ParserIterator(
                 int idx,
-                int endIdx,
                 Parser<Args...>* parser) :
-                idx(idx), endIdx(endIdx), parser(parser) {}
+                idx(idx), parser(parser) {}
+
 
         ParserIterator& operator++ () {
-            if (idx < endIdx) {
                 idx++;
-            }
+
+            if (parser->csvFile.eof()) idx=-1;
+
             return *this;
+
         }
+
         bool operator== (const ParserIterator& other) {
             return this->parser == other.parser && this->idx == other.idx;
         }
+
         bool operator!= (const ParserIterator& other) {
             return !operator==(other);
         }
         std::tuple<Args...> operator* () {
             return parser->getTuple(parser->getRow(idx), idx);
         }
+
     };
 
 public:
@@ -141,7 +138,7 @@ public:
             throw simple_exception("Can't find specified file.");
         }
 
-        setLinesNumber(_numOfSkippedLines);
+        skip_lines(_numOfSkippedLines);
 
     }
 
@@ -150,11 +147,11 @@ public:
     }
 
     ParserIterator begin() {
-        return ParserIterator(0, linesTotal, this);
+        return ParserIterator(0, this);
     }
 
     ParserIterator end() {
-        return ParserIterator(linesTotal, linesTotal, this);
+        return ParserIterator(-1, this);
     }
 
 };
